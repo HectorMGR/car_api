@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import get_current_admin
 from app.db.session import get_db
 from app.models import Brand
 from app.schemas.brand import BrandCreate, BrandResponse
@@ -16,7 +17,11 @@ async def list_brands(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/", response_model=BrandResponse, status_code=201)
-async def create_brand(data: BrandCreate, db: AsyncSession = Depends(get_db)):
+async def create_brand(
+    data: BrandCreate,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
     brand = Brand(**data.model_dump())
     db.add(brand)
     await db.flush()

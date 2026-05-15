@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Vehicle, VehicleImage, Brand, Model, Currency, VehicleStatus
-from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleDetail
+from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleDetail, VehiclePagination
 from app.schemas.vehicle_image import VehicleImageResponse
 
 
@@ -16,7 +18,12 @@ class VehicleService:
         min_price: float | None = None,
         max_price: float | None = None,
         year: int | None = None,
-    ) -> list[VehicleDetail]:
+        status: str = "available",
+        cursor: datetime | None = None,
+        limit: int = 12,
+        sort_by: str = "price",
+        order: str = "asc",
+    ) -> VehiclePagination:
         query = (
             select(Vehicle)
             .join(Model)
@@ -27,7 +34,6 @@ class VehicleService:
             .options(selectinload(Vehicle.model).selectinload(Model.brand))
             .options(selectinload(Vehicle.currency))
             .options(selectinload(Vehicle.status))
-            .order_by(Vehicle.created_at.desc())
         )
 
         if brand_id:
@@ -38,11 +44,40 @@ class VehicleService:
             query = query.where(Vehicle.price <= max_price)
         if year:
             query = query.where(Vehicle.year == year)
+        if status:
+            query = query.where(VehicleStatus.name == status)
+        if cursor:
+            query = query.where(Vehicle.created_at > cursor)
+
+        if sort_by == "price":
+            query = query.order_by(
+                Vehicle.price.asc() if order == "asc" else Vehicle.price.desc()
+            )
+        else:
+            query = query.order_by(
+                Vehicle.created_at.desc()
+            )
+
+        query = query.limit(limit + 1)
 
         result = await db.execute(query)
         vehicles = result.scalars().unique().all()
 
-        return [VehicleService._to_detail(v) for v in vehicles]
+        has_more = len(vehicles) > limit
+        if has_more:
+            vehicles = vehicles[:limit]
+
+        items = [VehicleService._to_detail(v) for v in vehicles]
+
+        next_cursor = None
+        if has_more and items:
+            next_cursor = items[-1].created_at.isoformat()
+
+        return VehiclePagination(
+            items=items,
+            next_cursor=next_cursor,
+            has_more=has_more,
+        )
 
     @staticmethod
     async def get_by_id(db: AsyncSession, vehicle_id: int) -> VehicleDetail | None:

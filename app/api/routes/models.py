@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import get_current_admin
 from app.db.session import get_db
 from app.models import Model
 from app.schemas.model import ModelCreate, ModelResponse
@@ -22,7 +23,11 @@ async def list_models(
 
 
 @router.post("/", response_model=ModelResponse, status_code=201)
-async def create_model(data: ModelCreate, db: AsyncSession = Depends(get_db)):
+async def create_model(
+    data: ModelCreate,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
     model = Model(**data.model_dump())
     db.add(model)
     await db.flush()

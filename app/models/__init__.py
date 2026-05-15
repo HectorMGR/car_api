@@ -1,3 +1,3 @@
-from app.models.models import Brand, Model, Currency, VehicleStatus, Vehicle, VehicleImage
+from app.models.models import Brand, Currency, Model, User, Vehicle, VehicleImage, VehicleStatus
 
-__all__ = ["Brand", "Model", "Currency", "VehicleStatus", "Vehicle", "VehicleImage"]
+__all__ = ["Brand", "Currency", "Model", "User", "Vehicle", "VehicleImage", "VehicleStatus"]

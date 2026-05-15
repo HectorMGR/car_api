@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
-    # Admin
+    # Legacy admin env vars. Login now uses the users table.
     admin_username: str = "admin"
-    admin_password_hash: str
+    admin_password_hash: str = ""
 
     # Cloudinary
     cloudinary_cloud_name: str = ""

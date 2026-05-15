@@ -48,3 +48,12 @@ class VehicleDetail(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class VehiclePagination(BaseModel):
+    """Paginated response with cursor"""
+    items: list[VehicleDetail]
+    next_cursor: str | None
+    has_more: bool
+
+    model_config = ConfigDict(from_attributes=True)
